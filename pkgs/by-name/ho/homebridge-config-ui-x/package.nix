@@ -38,15 +38,20 @@ buildNpmPackage rec {
     # Tricky way to run npmConfigHook multiple times
     (
       source ${npmHooks.npmConfigHook}/nix-support/setup-hook
-      npmRoot=ui npmDeps=${npmDeps_ui} npmConfigHook
+      npmRoot=ui npmDeps=${npmDeps_ui} makeCacheWritable= npmConfigHook
     )
     # Required to prevent "ng build" from failing due to
     # prompting user for autocompletion
     export CI=true
   '';
 
+  # On darwin, the build failed because openpty() is not declared
+  # Uses the prebuild version of @homebridge/node-pty-prebuilt-multiarch instead
+  makeCacheWritable = pkgs.stdenv.hostPlatform.isDarwin;
+
   nativeBuildInputs = with pkgs; [
     python3
+    (lib.optional stdenv.hostPlatform.isDarwin cacert)
   ];
 
   meta = {
@@ -54,7 +59,7 @@ buildNpmPackage rec {
     homepage = "https://github.com/homebridge/homebridge-config-ui-x";
     license = lib.licenses.mit;
     mainProgram = "homebridge-config-ui-x";
-    platforms = lib.platforms.linux;
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
     maintainers = with lib.maintainers; [ fmoda3 ];
   };
 }
